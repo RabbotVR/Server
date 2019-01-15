@@ -1,56 +1,79 @@
 var app = require('express')();
 var server = require('http').Server(app);
 var io = require('socket.io')(server);
+var shortId 		= require('shortid');
 
 server.listen(3000);
 
-app.get('/', function(req, res) {
-	res.send('hey you got back get "/"');
-});
+var clients			= [];
+
+io.on('connection', function (socket) {
+
+	var currentUser;
+
+	socket.on('USER_CONNECT', function (){
+
+		console.log('Users Connected ');
+		for (var i = 0; i < clients.length; i++) {
 
 
-// global variables for the server
-var clients = [];
+			socket.emit('USER_CONNECTED',{
 
-io.on('connection', function(socket) {
+				name:clients[i].name,
+				id:clients[i].id,
+				position:clients[i].position
 
-    var currentPlayer = {};
-	currentPlayer.name = 'unknown';
+			});
 
-    socket.on('player connect', function() {
-        console.log(currentPlayer.name+' recv: player connect');
-		for (var i =0; i < clients.length; i++) {
-			var playerConnected = {
-				name:clients[i].name
-			};
-			// in your current game, we need to tell you about the other players.
-			socket.emit('other player connected', playerConnected);
-			console.log(currentPlayer.name+' emit: other player connected: '+JSON.stringify(playerConnected));
-		}
-	});
-	
-	socket.on('play', function(data) {
-		console.log(currentPlayer.name+' recv: play: '+JSON.stringify(data));
-		currentPlayer = {
-			name: data.name
+			console.log('User name '+clients[i].name+' is connected..');
+
 		};
-		clients.push(currentPlayer);
-		// in your current game, tell you that you have joined
-		console.log(currentPlayer.name+' emit: play: ' + JSON.stringify(currentPlayer));
-		socket.emit('play', currentPlayer);
-		// in your current game, we need to tell the other players about you.
-		socket.broadcast.emit('other player connected', currentPlayer);
+
 	});
 
-    socket.on('disconnect', function() {
-		console.log(currentPlayer.name+' recv: disconnect '+currentPlayer.name);
-		socket.broadcast.emit('other player disconnected', currentPlayer);
-		console.log(currentPlayer.name+' bcst: other player disconnected '+JSON.stringify(currentPlayer));
-		for(var i=0; i<clients.length; i++) {
-			if(clients[i].name === currentPlayer.name) {
-				clients.splice(i,1);
-			}
+	socket.on('PLAY', function (data){
+		currentUser = {
+			name:data.name,
+			id:shortId.generate(),
+			position:data.position
 		}
-    });
+
+		clients.push(currentUser);
+		socket.emit('PLAY',currentUser );
+		socket.broadcast.emit('USER_CONNECTED',currentUser);
+
+	});
+
+	socket.on('disconnect', function (){
+
+		socket.broadcast.emit('USER_DISCONNECTED',currentUser);
+		for (var i = 0; i < clients.length; i++) {
+			if (clients[i].name === currentUser.name && clients[i].id === currentUser.id) {
+
+				console.log("User "+clients[i].name+" id: "+clients[i].id+" has disconnected");
+				clients.splice(i,1);
+
+			};
+		};
+
+	});
+
+	socket.on('MOVE', function (data){
+
+		// currentUser.name = data.name;
+		// currentUser.id   = data.id;
+		currentUser.position = data.position;
+
+		socket.broadcast.emit('MOVE', currentUser);
+		console.log(currentUser.name+" Move to "+currentUser.position);
+
+
+	});
+
+
 });
-console.log('--- server is running on port 3000 ...');
+
+
+server.listen( app.get('port'), function (){
+	console.log("------- server is running -------");
+} );
