@@ -70,7 +70,13 @@ io.on('connection', function (socket) {
 
 	});
 
+	// button event starts here
+	socket.on('Light', function(){
+		socket.broadcast.emit('Light');
+		console.log('light');
+	});
 
+// button even ends here
 });
 
 
