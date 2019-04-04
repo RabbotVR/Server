@@ -4,6 +4,7 @@ var io = require('socket.io')(server);
 var shortId 		= require('shortid');
 
 server.listen(3000);
+process.on('SIGTERM', () =>server.close());
 
 var clients			= [];
 
@@ -44,6 +45,7 @@ io.on('connection', function (socket) {
 
 	});
 
+
 	socket.on('disconnect', function (){
 
 		socket.broadcast.emit('USER_DISCONNECTED',currentUser);
@@ -58,10 +60,11 @@ io.on('connection', function (socket) {
 
 	});
 
+
 	socket.on('MOVE', function (data){
 
-		// currentUser.name = data.name;
-		// currentUser.id   = data.id;
+		 // currentUser.name = data.name;
+		 // currentUser.id   = data.id;
 		currentUser.position = data.position;
 
 		socket.broadcast.emit('MOVE', currentUser);
