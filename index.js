@@ -10,7 +10,7 @@ var clients			= [];
 
 io.on('connection', function (socket) {
 
-	var currentUser;
+	var currentUser = null;
 
 	socket.on('USER_CONNECT', function (){
 
@@ -49,6 +49,8 @@ io.on('connection', function (socket) {
 	socket.on('disconnect', function (){
 
 		socket.broadcast.emit('USER_DISCONNECTED',currentUser);
+
+		if (currentUser === null) return
 		for (var i = 0; i < clients.length; i++) {
 			if (clients[i].name === currentUser.name && clients[i].id === currentUser.id) {
 
